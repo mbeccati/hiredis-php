@@ -499,6 +499,8 @@ const zend_function_entry hiredis_methods[] = {
 	PHP_ME(Redis, getOption, NULL, ZEND_ACC_PUBLIC)
 	PHP_ME(Redis, setOption, NULL, ZEND_ACC_PUBLIC)
 
+	PHP_MALIAS(Redis, delete, del, NULL, ZEND_ACC_PUBLIC)
+
 	PHP_FE_END	/* Must be the last line  */
 };
 /* }}} */
