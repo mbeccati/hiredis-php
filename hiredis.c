@@ -254,7 +254,6 @@ PHP_METHOD(Redis, echo)
 PHP_METHOD(Redis, get)
 {
 	zval *reply;
-
 	zend_string *key;
 
 	if (zend_parse_parameters(ZEND_NUM_ARGS(), "S", &key) == FAILURE) {
@@ -272,7 +271,6 @@ PHP_METHOD(Redis, get)
 PHP_METHOD(Redis, set)
 {
 	zval *reply;
-
 	zend_string *key, *val;
 
 	if (zend_parse_parameters(ZEND_NUM_ARGS(), "SS", &key, &val) == FAILURE) {
@@ -288,6 +286,72 @@ PHP_METHOD(Redis, set)
 	}
 }
 /* }}} */
+
+/* {{{ proto bool Redis::setex(string key, int expire, mixed value)
+   SETEX */
+PHP_METHOD(Redis, setex)
+{
+	zval *reply;
+	zend_string *key, *val;
+	zend_long expire;
+
+	if (zend_parse_parameters(ZEND_NUM_ARGS(), "SlS", &key, &expire, &val) == FAILURE) {
+		return;
+	}
+
+	HIREDIS_COMMAND_PREFIX(reply, "SETEX %b%b %d %b", key->val, key->len, expire, val->val, val->len);
+
+	if (reply) {
+		HIREDIS_FREE(reply);
+
+		RETURN_TRUE;
+	}
+}
+/* }}} */
+
+/* {{{ proto bool Redis::psetex(string key, int expire, mixed value)
+   PSETEX */
+PHP_METHOD(Redis, psetex)
+{
+	zval *reply;
+	zend_string *key, *val;
+	zend_long expire;
+
+	if (zend_parse_parameters(ZEND_NUM_ARGS(), "SlS", &key, &expire, &val) == FAILURE) {
+		return;
+	}
+
+	HIREDIS_COMMAND_PREFIX(reply, "PSETEX %b%b %d %b", key->val, key->len, expire, val->val, val->len);
+
+	if (reply) {
+		HIREDIS_FREE(reply);
+
+		RETURN_TRUE;
+	}
+}
+/* }}} */
+
+/* {{{ proto bool Redis::setnx(string key, mixed value)
+   SETNX */
+PHP_METHOD(Redis, setnx)
+{
+	zval *reply;
+	zend_string *key, *val;
+
+	if (zend_parse_parameters(ZEND_NUM_ARGS(), "SS", &key, &val) == FAILURE) {
+		return;
+	}
+
+	HIREDIS_COMMAND_PREFIX(reply, "SETNX %b%b %b", key->val, key->len, val->val, val->len);
+
+	if (reply) {
+		convert_to_boolean(reply);
+		HIREDIS_RETURN(reply);
+	}
+}
+/* }}} */
+
+
 
 /* {{{ proto string Redis::getOption(int option)
    GETOPTION */
@@ -370,6 +434,10 @@ const zend_function_entry hiredis_methods[] = {
 	PHP_ME(Redis, echo, NULL, ZEND_ACC_PUBLIC)
 	PHP_ME(Redis, get, NULL, ZEND_ACC_PUBLIC)
 	PHP_ME(Redis, set, NULL, ZEND_ACC_PUBLIC)
+	PHP_ME(Redis, setex, NULL, ZEND_ACC_PUBLIC)
+	PHP_ME(Redis, psetex, NULL, ZEND_ACC_PUBLIC)
+	PHP_ME(Redis, setnx, NULL, ZEND_ACC_PUBLIC)
+
 	PHP_ME(Redis, getOption, NULL, ZEND_ACC_PUBLIC)
 	PHP_ME(Redis, setOption, NULL, ZEND_ACC_PUBLIC)
 
