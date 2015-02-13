@@ -385,7 +385,7 @@ PHP_METHOD(Redis, del)
 }
 /* }}} */
 
-/* {{{ proto array Redis::info([string key])
+/* {{{ proto array Redis::info([string opt])
    INFO */
 PHP_METHOD(Redis, info)
 {
@@ -401,6 +401,24 @@ PHP_METHOD(Redis, info)
 	} else {
 		HIREDIS_COMMAND(reply, "INFO");
 	}
+
+    HIREDIS_RETURN(reply);
+}
+/* }}} */
+
+/* {{{ proto array Redis::expire(string key, int timeout)
+   EXPIRE */
+PHP_METHOD(Redis, expire)
+{
+    zval *reply;
+    zend_string *key;
+	zend_long timeout;
+
+    if (zend_parse_parameters(ZEND_NUM_ARGS(), "Sl", &key, &timeout) == FAILURE) {
+        return;
+    }
+
+	HIREDIS_COMMAND_PREFIX(reply, "EXPIRE %b%b %d", key->val, key->len, timeout);
 
     HIREDIS_RETURN(reply);
 }
@@ -495,11 +513,13 @@ const zend_function_entry hiredis_methods[] = {
 	PHP_ME(Redis, keys, NULL, ZEND_ACC_PUBLIC)
 	PHP_ME(Redis, del, NULL, ZEND_ACC_PUBLIC)
 	PHP_ME(Redis, info, NULL, ZEND_ACC_PUBLIC)
+	PHP_ME(Redis, expire, NULL, ZEND_ACC_PUBLIC)
 
 	PHP_ME(Redis, getOption, NULL, ZEND_ACC_PUBLIC)
 	PHP_ME(Redis, setOption, NULL, ZEND_ACC_PUBLIC)
 
 	PHP_MALIAS(Redis, delete, del, NULL, ZEND_ACC_PUBLIC)
+	PHP_MALIAS(Redis, setTimeout, expire, NULL, ZEND_ACC_PUBLIC)
 
 	PHP_FE_END	/* Must be the last line  */
 };
