@@ -351,6 +351,39 @@ PHP_METHOD(Redis, setnx)
 }
 /* }}} */
 
+/* {{{ proto array Redis::keys(string pattern)
+   KEYS */
+PHP_METHOD(Redis, keys)
+{
+    zval *reply;
+    zend_string *pattern;
+
+    if (zend_parse_parameters(ZEND_NUM_ARGS(), "S", &pattern) == FAILURE) {
+        return;
+    }
+
+    HIREDIS_COMMAND_PREFIX(reply, "KEYS %b%b", pattern->val, pattern->len);
+
+    HIREDIS_RETURN(reply);
+}
+/* }}} */
+
+/* {{{ proto array Redis::del(string key)
+   DEL */
+PHP_METHOD(Redis, del)
+{
+    zval *reply;
+    zend_string *key;
+
+    if (zend_parse_parameters(ZEND_NUM_ARGS(), "S", &key) == FAILURE) {
+        return;
+    }
+
+    HIREDIS_COMMAND_PREFIX(reply, "DEL %b%b", key->val, key->len);
+
+    HIREDIS_RETURN(reply);
+}
+/* }}} */
 
 
 /* {{{ proto string Redis::getOption(int option)
@@ -437,6 +470,9 @@ const zend_function_entry hiredis_methods[] = {
 	PHP_ME(Redis, setex, NULL, ZEND_ACC_PUBLIC)
 	PHP_ME(Redis, psetex, NULL, ZEND_ACC_PUBLIC)
 	PHP_ME(Redis, setnx, NULL, ZEND_ACC_PUBLIC)
+
+	PHP_ME(Redis, keys, NULL, ZEND_ACC_PUBLIC)
+	PHP_ME(Redis, del, NULL, ZEND_ACC_PUBLIC)
 
 	PHP_ME(Redis, getOption, NULL, ZEND_ACC_PUBLIC)
 	PHP_ME(Redis, setOption, NULL, ZEND_ACC_PUBLIC)

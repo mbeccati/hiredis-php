@@ -33,5 +33,7 @@ var_dump($r->ping());
 var_dump($r->echo('redis is here'));
 
 var_dump($r->setnx('var', date('Y-m-d')));
+var_dump($r->del('var'));
+var_dump($r->setnx('var', date('Y-m-d')));
 
 var_dump($r->close());
