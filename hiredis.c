@@ -385,6 +385,27 @@ PHP_METHOD(Redis, del)
 }
 /* }}} */
 
+/* {{{ proto array Redis::info([string key])
+   INFO */
+PHP_METHOD(Redis, info)
+{
+    zval *reply;
+    zend_string *opt = NULL;
+
+    if (zend_parse_parameters(ZEND_NUM_ARGS(), "|S", &opt) == FAILURE) {
+        return;
+    }
+
+	if (opt && opt->len) {
+	    HIREDIS_COMMAND_PREFIX(reply, "INFO %b%b", opt->val, opt->len);
+	} else {
+		HIREDIS_COMMAND(reply, "INFO");
+	}
+
+    HIREDIS_RETURN(reply);
+}
+/* }}} */
+
 
 /* {{{ proto string Redis::getOption(int option)
    GETOPTION */
@@ -473,6 +494,7 @@ const zend_function_entry hiredis_methods[] = {
 
 	PHP_ME(Redis, keys, NULL, ZEND_ACC_PUBLIC)
 	PHP_ME(Redis, del, NULL, ZEND_ACC_PUBLIC)
+	PHP_ME(Redis, info, NULL, ZEND_ACC_PUBLIC)
 
 	PHP_ME(Redis, getOption, NULL, ZEND_ACC_PUBLIC)
 	PHP_ME(Redis, setOption, NULL, ZEND_ACC_PUBLIC)
