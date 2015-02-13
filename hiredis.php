@@ -5,6 +5,17 @@ var_dump($r);
 
 var_dump($r->connect('127.0.0.1'));
 
+var_dump($r->close());
+
+try {
+	var_dump($r->get('foo'));
+	die("OH NO!\n");
+} catch (\Exception $e) {
+
+}
+
+var_dump($r->connect('127.0.0.1'));
+
 var_dump('set/get foo');
 var_dump($r->set('foo', 45));
 var_dump($r->get('foo'));
@@ -18,3 +29,7 @@ var_dump('set/get foo_var');
 var_dump($r->set('var', '12-01-76'));
 var_dump($r->get('var'));
 
+var_dump($r->ping());
+var_dump($r->echo('redis is here'));
+
+var_dump($r->close());

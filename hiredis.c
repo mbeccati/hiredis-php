@@ -78,8 +78,8 @@ static redisReply *php_hiredis_command(zval *zv, const char *format, ...) /* {{{
 	redisReply *reply = NULL;
 
 	if (!obj->rc) {
-		HIREDIS_EXCPTION("Not connected", 0);
-		return;
+		HIREDIS_EXCEPTION("Not connected", 0);
+		return NULL;
 	}
 
 	va_start(ap, format);
@@ -91,7 +91,8 @@ static redisReply *php_hiredis_command(zval *zv, const char *format, ...) /* {{{
 		size_t len = spprintf(&msg, 0, "Command error: %s", obj->rc->errstr);
 
 		redisFree(obj->rc);
-		HIREDIS_EXCPTION(msg);
+		obj->rc = NULL;
+		HIREDIS_EXCEPTION(msg, 0);
 		efree(msg);
 	}
 
@@ -136,6 +137,16 @@ PHP_INI_END()
 */
 /* }}} */
 
+/* {{{ proto Redis Redis::__construct()
+Public constructor */
+PHP_METHOD(Redis, __construct)
+{
+	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "") == FAILURE) {
+		RETURN_FALSE;
+	}
+}
+/* }}} */
+
 /* {{{ proto bool Redis::connect(string hostname, int port = 6379, double timeout = 0, int retry_interval = 0)
    CONNECT */
 PHP_METHOD(Redis, connect)
@@ -157,6 +168,11 @@ PHP_METHOD(Redis, connect)
 	if (timeout < 0) {
 		REDIS_EXCEPTION("Timeout must be >= 0", 0);
 		return;
+	}
+
+	if (obj->rc) {
+		redisFree(obj->rc);
+		obj->rc = NULL;
 	}
 
 	if (timeout) {
@@ -189,11 +205,73 @@ PHP_METHOD(Redis, connect)
 }
 /* }}} */
 
+/* {{{ proto bool Redis::close()
+CLOSE */
+PHP_METHOD(Redis, close)
+{
+	php_hiredis_object *obj = Z_HIREDIS_P(getThis());
+
+	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "") == FAILURE) {
+		RETURN_FALSE;
+	}
+
+	if (obj->rc) {
+		redisFree(obj->rc);
+		obj->rc = NULL;
+
+		RETURN_TRUE;
+	}
+
+	RETURN_FALSE;
+}
+/* }}} */
+
+/* {{{ proto bool Redis::ping()
+PING */
+PHP_METHOD(Redis, ping)
+{
+	redisReply *reply;
+
+	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "") == FAILURE) {
+		RETURN_FALSE;
+	}
+
+	HIREDIS_COMMAND(reply, "PING")
+
+	if (reply && reply->len == 4 && !memcmp(reply->str, "PONG", 4)) {
+		RETVAL_TRUE;
+	} else {
+		RETVAL_FALSE;
+	}
+
+    freeReplyObject(reply);
+}
+/* }}} */
+
+/* {{{ proto string Redis::echo(string key)
+ECHO */
+PHP_METHOD(Redis, echo)
+{
+	redisReply *reply;
+	zend_string *key;
+
+	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "S", &key) == FAILURE) {
+		RETURN_FALSE;
+	}
+
+	HIREDIS_COMMAND(reply, "ECHO %s", key->val, key->len);
+
+	if (reply) {
+		RETVAL_STR(zend_string_init(reply->str, reply->len, 0));
+    	freeReplyObject(reply);
+	}
+}
+/* }}} */
+
 /* {{{ proto string Redis::get(string key)
    GET */
 PHP_METHOD(Redis, get)
 {
-	redisContext *c;
 	redisReply *reply;
 
 	zend_string *key;
@@ -204,8 +282,10 @@ PHP_METHOD(Redis, get)
 
 	HIREDIS_COMMAND_PREFIX(reply, "GET %b%b", key->val, key->len);
 
-	RETVAL_STR(zend_string_init(reply->str, reply->len, 0));
-	freeReplyObject(reply);
+	if (reply) {
+		RETVAL_STR(zend_string_init(reply->str, reply->len, 0));
+		freeReplyObject(reply);
+	}
 }
 /* }}} */
 
@@ -213,7 +293,6 @@ PHP_METHOD(Redis, get)
    SET */
 PHP_METHOD(Redis, set)
 {
-	redisContext *c;
 	redisReply *reply;
 
 	zend_string *key, *val;
@@ -223,9 +302,12 @@ PHP_METHOD(Redis, set)
 	}
 
 	HIREDIS_COMMAND_PREFIX(reply, "SET %b%b %b", key->val, key->len, val->val, val->len);
-	freeReplyObject(reply);
 
-	RETURN_TRUE;
+	if (reply) {
+		freeReplyObject(reply);
+
+		RETURN_TRUE;
+	}
 }
 /* }}} */
 
@@ -303,7 +385,11 @@ static void php_hiredis_init_globals(zend_hiredis_globals *hiredis_globals)
 /* {{{ hiredis_methods[]
  */
 const zend_function_entry hiredis_methods[] = {
+	PHP_ME(Redis, __construct, NULL, ZEND_ACC_CTOR | ZEND_ACC_PUBLIC)
 	PHP_ME(Redis, connect, NULL, ZEND_ACC_PUBLIC)
+	PHP_ME(Redis, close, NULL, ZEND_ACC_PUBLIC)
+	PHP_ME(Redis, ping, NULL, ZEND_ACC_PUBLIC)
+	PHP_ME(Redis, echo, NULL, ZEND_ACC_PUBLIC)
 	PHP_ME(Redis, get, NULL, ZEND_ACC_PUBLIC)
 	PHP_ME(Redis, set, NULL, ZEND_ACC_PUBLIC)
 	PHP_ME(Redis, getOption, NULL, ZEND_ACC_PUBLIC)
