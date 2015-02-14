@@ -15,24 +15,33 @@
 +----------------------------------------------------------------------+
 | Author: Matteo Beccati <matteo@beccati.com>                          |
 +----------------------------------------------------------------------+
-*/
+ */
 
 #ifndef PHP_HIREDIS_H
 #define PHP_HIREDIS_H
-
-/* Extends zend object */
-typedef struct _php_hiredis_object {
-	redisContext *rc;
-	zend_string *prefix;
-	zend_object zo;
-} php_hiredis_object;
 
 typedef enum {
 	HIREDIS_OPT_PREFIX = 1
 } php_hiredis_opt;
 
-static inline php_hiredis_object *php_hiredis_fetch_object(zend_object *obj) {
-    return (php_hiredis_object *)((char*)(obj) - XtOffsetOf(php_hiredis_object, zo));
+typedef enum {
+	HIREDIS_MULTI_NONE,
+	HIREDIS_MULTI_PIPELINE,
+	HIREDIS_MULTI_ATOMIC
+} php_hiredis_multi;
+
+/* Extends zend object */
+typedef struct _php_hiredis_object {
+	redisContext *rc;
+	zend_string *prefix;
+	php_hiredis_multi multi;
+	int queue;
+	zend_object zo;
+} php_hiredis_object;
+
+static inline php_hiredis_object *php_hiredis_fetch_object(zend_object *obj)
+{
+	return (php_hiredis_object *) ((char*) (obj) - XtOffsetOf(php_hiredis_object, zo));
 }
 
 #define Z_HIREDIS_P(zv) php_hiredis_fetch_object(Z_OBJ_P((zv)))
@@ -47,10 +56,14 @@ static inline php_hiredis_object *php_hiredis_fetch_object(zend_object *obj) {
         } \
     }
 
-#define HIREDIS_EXCEPTION(msg, code) zend_throw_exception(hiredis_exception_ce, msg, code);
+#define HIREDIS_EXCEPTION(msg, code) zend_throw_exception(hiredis_exception_ce, msg, code)
 
 #define HIREDIS_COMMAND(reply, format, ...) \
 if (!(reply = php_hiredis_command(getThis(), format , ##__VA_ARGS__))) { \
+	zval *_z = getThis(); \
+	if (Z_HIREDIS_P(_z)->multi) { \
+		RETURN_ZVAL(_z, 1, 0); \
+	} \
 	return; \
 }
 
@@ -88,11 +101,11 @@ PHP_METHOD(Redis, connect);
 PHP_METHOD(Redis, get);
 
 #ifdef PHP_WIN32
-#	define PHP_HIREDIS_API __declspec(dllexport)
+#define PHP_HIREDIS_API __declspec(dllexport)
 #elif defined(__GNUC__) && __GNUC__ >= 4
-#	define PHP_HIREDIS_API __attribute__ ((visibility("default")))
+#define PHP_HIREDIS_API __attribute__ ((visibility("default")))
 #else
-#	define PHP_HIREDIS_API
+#define PHP_HIREDIS_API
 #endif
 
 #ifdef ZTS
@@ -100,19 +113,19 @@ PHP_METHOD(Redis, get);
 #endif
 
 /*
-  	Declare any global variables you may need between the BEGIN
+	Declare any global variables you may need between the BEGIN
 	and END macros here:
 
 ZEND_BEGIN_MODULE_GLOBALS(hiredis)
 	zend_long  global_value;
 	char *global_string;
 ZEND_END_MODULE_GLOBALS(hiredis)
-*/
+ */
 
 /* Always refer to the globals in your function as HIREDIS_G(variable).
    You are encouraged to rename these macros something shorter, see
    examples in any other php module directory.
-*/
+ */
 
 #ifdef ZTS
 #define HIREDIS_G(v) ZEND_TSRMG(hiredis_globals_id, zend_hiredis_globals *, v)

@@ -92,7 +92,13 @@ static zval *php_hiredis_command(zval *zv, const char *format, ...) /* {{{ */
 	}
 
 	va_start(ap, format);
-	reply = redisvCommand(obj->rc, format, ap);
+	if (obj->multi) {
+		redisvAppendCommand(obj->rc, format, ap);
+		obj->queue++;
+		return NULL;
+	} else {
+		reply = redisvCommand(obj->rc, format, ap);
+	}
 	va_end(ap);
 
 	if (!reply) {
@@ -449,6 +455,55 @@ PHP_METHOD(Redis, ttl)
 }
 /* }}} */
 
+/* {{{ proto Redis Redis::pipeline()
+   PIPELINE */
+PHP_METHOD(Redis, pipeline)
+{
+	php_hiredis_object *obj = Z_HIREDIS_P(getThis());
+
+    if (zend_parse_parameters(ZEND_NUM_ARGS(), "") == FAILURE) {
+        return;
+    }
+
+	obj->multi = HIREDIS_MULTI_PIPELINE;
+
+	RETURN_ZVAL(getThis(), 0, 0);
+}
+/* }}} */
+
+/* {{{ proto Redis Redis::exec()
+   EXEC */
+PHP_METHOD(Redis, exec)
+{
+	php_hiredis_object *obj = Z_HIREDIS_P(getThis());
+	zval ret, *reply;
+	int ok = 1;
+
+    if (zend_parse_parameters(ZEND_NUM_ARGS(), "") == FAILURE) {
+        return;
+    }
+
+	if (obj->queue > 0 && obj->multi == HIREDIS_MULTI_PIPELINE) {
+		array_init(&ret);
+
+		while (obj->queue--) {
+			if (redisGetReply(obj->rc, (void **)&reply) == REDIS_OK) {
+				if (ok) {
+					zend_hash_next_index_insert(Z_ARRVAL(ret), reply);
+				}
+				php_hiredis_freeReplyObject(reply);
+			} else {
+				ok = 0;
+			}
+		}
+
+		obj->multi = HIREDIS_MULTI_NONE;
+
+		RETURN_ZVAL(&ret, 1, 1);
+	}
+}
+/* }}} */
+
 /* {{{ proto string Redis::getOption(int option)
    GETOPTION */
 PHP_METHOD(Redis, getOption)
@@ -542,6 +597,9 @@ const zend_function_entry hiredis_methods[] = {
 
 	PHP_ME(Redis, getOption, NULL, ZEND_ACC_PUBLIC)
 	PHP_ME(Redis, setOption, NULL, ZEND_ACC_PUBLIC)
+
+	PHP_ME(Redis, pipeline, NULL, ZEND_ACC_PUBLIC)
+	PHP_ME(Redis, exec, NULL, ZEND_ACC_PUBLIC)
 
 	PHP_MALIAS(Redis, getKeys, keys, NULL, ZEND_ACC_PUBLIC)
 	PHP_MALIAS(Redis, delete, del, NULL, ZEND_ACC_PUBLIC)

@@ -33,7 +33,7 @@ inline zval *getZval(const redisReadTask *task, zval *z)
 {
 	zval *new;
 
-	if (task->parent) {
+	if (task && task->parent) {
 		new = zend_hash_index_add(Z_ARRVAL_P((zval *)task->parent->obj), task->idx, z);
 	} else {
 		new = emalloc(sizeof(zval));
