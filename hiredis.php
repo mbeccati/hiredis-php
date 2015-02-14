@@ -36,4 +36,8 @@ var_dump($r->setnx('var', date('Y-m-d')));
 var_dump($r->del('var'));
 var_dump($r->setnx('var', date('Y-m-d')));
 
+$r->setex('xxx', 1, 'foo');
+sleep(2);
+var_dump($r->get('xxx'));
+
 var_dump($r->close());

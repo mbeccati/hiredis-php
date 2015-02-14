@@ -262,7 +262,15 @@ PHP_METHOD(Redis, get)
 
 	HIREDIS_COMMAND_PREFIX(reply, "GET %b%b", key->val, key->len);
 
-	HIREDIS_RETURN(reply);
+	if (reply) {
+		if (Z_TYPE_P(reply) == IS_STRING) {
+			HIREDIS_RETURN(reply);
+		}
+
+		HIREDIS_FREE(reply);
+	}
+
+	RETURN_FALSE;
 }
 /* }}} */
 
@@ -535,6 +543,7 @@ const zend_function_entry hiredis_methods[] = {
 	PHP_ME(Redis, getOption, NULL, ZEND_ACC_PUBLIC)
 	PHP_ME(Redis, setOption, NULL, ZEND_ACC_PUBLIC)
 
+	PHP_MALIAS(Redis, getKeys, keys, NULL, ZEND_ACC_PUBLIC)
 	PHP_MALIAS(Redis, delete, del, NULL, ZEND_ACC_PUBLIC)
 	PHP_MALIAS(Redis, setTimeout, expire, NULL, ZEND_ACC_PUBLIC)
 
