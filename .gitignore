@@ -4,7 +4,6 @@ Make*
 *.lo
 *.la
 *.o
-/config*
 /autom4te.cache
 /build/
 /create_stubs
