@@ -654,7 +654,7 @@ PHP_MSHUTDOWN_FUNCTION(hiredis)
 PHP_RINIT_FUNCTION(hiredis)
 {
 #if defined(COMPILE_DL_HIREDIS) && defined(ZTS)
-	ZEND_TSRMLS_CACHE_UPDATE;
+	/* ZEND_TSRMLS_CACHE_UPDATE; */
 #endif
 	return SUCCESS;
 }
