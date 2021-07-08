@@ -87,7 +87,7 @@ static zval *php_hiredis_command(zval *zv, const char *format, ...) /* {{{ */
 	zval *reply = NULL;
 
 	if (!obj->rc) {
-		HIREDIS_EXCEPTION("Not connected", 0);
+		//HIREDIS_EXCEPTION("Not connected", 0);
 		return NULL;
 	}
 
@@ -107,7 +107,7 @@ static zval *php_hiredis_command(zval *zv, const char *format, ...) /* {{{ */
 
 		redisFree(obj->rc);
 		obj->rc = NULL;
-		HIREDIS_EXCEPTION(msg, 0);
+		//HIREDIS_EXCEPTION(msg, 0);
 		efree(msg);
 	}
 
@@ -154,7 +154,7 @@ PHP_METHOD(Redis, connect)
 	}
 
 	if (timeout < 0) {
-		REDIS_EXCEPTION("Timeout must be >= 0", 0);
+		//REDIS_EXCEPTION("Timeout must be >= 0", 0);
 		return;
 	}
 
@@ -178,10 +178,10 @@ PHP_METHOD(Redis, connect)
 			size_t len = spprintf(&msg, 0, "Connection error: %s", c->errstr);
 
 			redisFree(c);
-			HIREDIS_EXCEPTION(msg, 0);
+			//HIREDIS_EXCEPTION(msg, 0);
 			efree(msg);
 		} else {
-			HIREDIS_EXCEPTION("Connection error: can't allocate redis context", 0);
+			//HIREDIS_EXCEPTION("Connection error: can't allocate redis context", 0);
 		}
 
 		return;
@@ -524,7 +524,7 @@ PHP_METHOD(Redis, getOption)
 			break;
 
 		default:
-			HIREDIS_EXCEPTION("Unknown option", 0);
+			//HIREDIS_EXCEPTION("Unknown option", 0);
 			return;
 	}
 }
@@ -553,7 +553,7 @@ PHP_METHOD(Redis, setOption)
 			break;
 
 		default:
-			HIREDIS_EXCEPTION("Unknown option", 0);
+			//HIREDIS_EXCEPTION("Unknown option", 0);
 			return;
 	}
 
@@ -654,7 +654,7 @@ PHP_MSHUTDOWN_FUNCTION(hiredis)
 PHP_RINIT_FUNCTION(hiredis)
 {
 #if defined(COMPILE_DL_HIREDIS) && defined(ZTS)
-	ZEND_TSRMLS_CACHE_UPDATE;
+	/* ZEND_TSRMLS_CACHE_UPDATE; */
 #endif
 	return SUCCESS;
 }

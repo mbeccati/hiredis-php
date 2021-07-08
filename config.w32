@@ -1,0 +1,17 @@
+// config.w32 for hiredis
+
+ARG_ENABLE("hiredis", "whether to enable hiredis", "no");
+
+if (PHP_HIREDIS != "no") {
+	if (
+			// put the lib in win64build\lib and win32build\lib
+			CHECK_LIB("hiredis.lib", "hiredis", PHP_HIREDIS) &&
+			CHECK_LIB("Win32_Interop.lib", "hiredis", PHP_HIREDIS) &&
+			CHECK_HEADER_ADD_INCLUDE("hiredis.h", "CFLAGS_HIREDIS", PHP_HIREDIS+ ";" + PHP_PHP_BUILD + "\\include\\hiredis")
+		) {
+		EXTENSION("hiredis", "hiredis.c hiredis_reader.c", true);
+		AC_DEFINE('HAVE_HIREDIS', 1, 'Have hiredis library');
+	} else {
+		WARNING("hiredis not enabled; libraries or headers not found");
+	}	
+}
